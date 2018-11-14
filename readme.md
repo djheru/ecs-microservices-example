@@ -7,8 +7,8 @@
 #### Set Up Env Vars
 
 ```bash
-export AWS_ACCESS_KEY_ID=AKIAJQ4OFIYA72CGFGAU
-export AWS_SECRET_ACCESS_KEY=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
+export AWS_ACCESS_KEY_ID=AKIAJQ4OFIYA72CGFGUA
+export AWS_SECRET_ACCESS_KEY=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
 export PROFILE_NAME=services-profile
 export CLUSTER_NAME=services-cluster
 export REGION=us-east-1
@@ -95,14 +95,15 @@ $(aws ecr get-login --no-include-email)
 #### Create the ECR Repository
 
 ```bash
-aws ecr create-repository \
-    --repository-name servicea
+export SERVICE_A_REPO=$(aws ecr create-repository \
+    --repository-name servicea \
+    --output text \
+    --query 'repository.repositoryUri')
     
-aws ecr create-repository \
-    --repository-name serviceb
-    
-export SERVICE_A_REPO=205375198116.dkr.ecr.us-east-1.amazonaws.com/servicea
-export SERVICE_B_REPO=205375198116.dkr.ecr.us-east-1.amazonaws.com/serviceb
+export SERVICE_B_REPO=$(aws ecr create-repository \
+    --repository-name serviceb \
+    --output text \
+    --query 'repository.repositoryUri')
 ```
 
 #### Build, Tag, and Push the Containers
@@ -110,13 +111,13 @@ export SERVICE_B_REPO=205375198116.dkr.ecr.us-east-1.amazonaws.com/serviceb
 ```bash
 cd ./servicea
 docker build -t servicea .
-docker tag servicea:latest $SERVICE_A_REPO:latest
-docker push $SERVICE_A_REPO:latest
+docker tag servicea:latest $SERVICE_A_REPO:v1
+docker push $SERVICE_A_REPO:v1
 
 cd ../serviceb
 docker build -t $SERVICE_B_NAME .
-docker tag serviceb:latest $SERVICE_B_REPO:latest
-docker push $SERVICE_B_REPO:latest
+docker tag serviceb:latest $SERVICE_B_REPO:v1
+docker push $SERVICE_B_REPO:v1
 ```
 
 ## 5. Create a Cluster and Security Group
@@ -129,24 +130,20 @@ docker push $SERVICE_B_REPO:latest
 ecs-cli up
 # Take note of the VPC and subnets in the output from this command
 
-export VPC_ID=vpc-0ce050530a3d68217
-export SUBNET_A_ID=subnet-00ce42d2ddc222057
-export SUBNET_B_ID=subnet-0461255c9e0ea8d47
+export VPC_ID=vpc-0a83cc57a2aa04c91
+export SUBNET_A_ID=subnet-0444ee83f3db5cc2f
+export SUBNET_B_ID=subnet-01f074060df49a16e
 ```
 
 #### Create the Security Groups
 
 ```bash
-aws ec2 create-security-group \
+export SECURITY_GROUP_ID=$(aws ec2 create-security-group \
     --group-name $SECURITY_GROUP_NAME \
     --description "Services security group" \
-    --vpc-id $VPC_ID
-```
-
-```
-# Take note of the security group id from the output of this command
-
-export SECURITY_GROUP_ID=sg-0ef3f60d8a047c2c8
+    --vpc-id $VPC_ID \
+    --output text \
+    --query 'GroupId')
 ```
 
 #### Add the Security Group Rule
@@ -173,47 +170,48 @@ aws elbv2 create-load-balancer \
 ```
 # Take note of the load balancer ARN output
 
-export LOAD_BALANCER_ARN=arn:aws:elasticloadbalancing:us-east-1:205375198116:loadbalancer/app/services-lb/f26a2c472260edab
-export DNS_NAME=services-lb-531974711.us-east-1.elb.amazonaws.com
+export LOAD_BALANCER_ARN=arn:aws:elasticloadbalancing:us-east-1:205375198116:loadbalancer/app/services-lb/412355024e7f7ea9
+export DNS_NAME=services-lb-1076194052.us-east-1.elb.amazonaws.com
 ```
 
 #### Target Groups Setup
 
 ```bash
 # Service A Target Group
-aws elbv2 create-target-group \
+export TARGET_GROUP_A_ARN=$(aws elbv2 create-target-group \
     --name $TARGET_GROUP_A_NAME \
     --health-check-path $HEALTH_CHECK_PATH_A \
     --protocol HTTP \
     --port 80 \
     --target-type ip \
-    --vpc-id $VPC_ID
+    --vpc-id $VPC_ID \
+    --output text \
+    --query 'TargetGroups[0].TargetGroupArn')
   
-export TARGET_GROUP_A_ARN=arn:aws:elasticloadbalancing:us-east-1:205375198116:targetgroup/servicea-tg/9331785ee630bb86
 
 
 # Service B  Target Group
-aws elbv2 create-target-group \
+export TARGET_GROUP_B_ARN=$(aws elbv2 create-target-group \
     --name $TARGET_GROUP_B_NAME \
     --health-check-path $HEALTH_CHECK_PATH_B \
     --protocol HTTP \
     --port 80 \
     --target-type ip \
-    --vpc-id $VPC_ID
-    
-export TARGET_GROUP_B_ARN=arn:aws:elasticloadbalancing:us-east-1:205375198116:targetgroup/serviceb-tg/d251cca03e918f61
+    --vpc-id $VPC_ID \
+    --output text \
+    --query 'TargetGroups[0].TargetGroupArn')
 ```
 
 #### Setup Listener
 
 ```bash
-aws elbv2 create-listener \
+export LISTENER_ARN=$(aws elbv2 create-listener \
     --load-balancer-arn $LOAD_BALANCER_ARN \
     --protocol HTTP \
     --port 80 \
-    --default-actions Type='fixed-response',FixedResponseConfig="{MessageBody=ohai,StatusCode=200,ContentType='text/plain'}"
-
-export LISTENER_ARN=arn:aws:elasticloadbalancing:us-east-1:205375198116:listener/app/services-lb/f26a2c472260edab/680bdaad01f01b00
+    --default-actions Type='fixed-response',FixedResponseConfig="{MessageBody=ohai,StatusCode=200,ContentType='text/plain'}" \
+    --output text \
+    --query 'Listeners[0].ListenerArn')
 ```
 
 ```
@@ -224,23 +222,23 @@ export LISTENER_ARN=arn:aws:elasticloadbalancing:us-east-1:205375198116:listener
 
 ```bash
 # Service A
-aws elbv2 create-rule \
+export RULE_A_ARN=$(aws elbv2 create-rule \
     --listener-arn $LISTENER_ARN \
     --priority 10 \
     --conditions Field=path-pattern,Values=$SERVICE_A_PATH \
-    --actions Type=forward,TargetGroupArn=$TARGET_GROUP_A_ARN
-    
-export RULE_A_ARN=arn:aws:elasticloadbalancing:us-east-1:205375198116:listener-rule/app/services-lb/f26a2c472260edab/680bdaad01f01b00/58b52fd5c60202e1
+    --actions Type=forward,TargetGroupArn=$TARGET_GROUP_A_ARN \
+    --output text \
+    --query 'Rules[0].RuleArn')
 
 # Service b
-aws elbv2 create-rule \
+export RULE_B_ARN=$(aws elbv2 create-rule \
     --listener-arn $LISTENER_ARN \
     --priority 11 \
     --conditions Field=path-pattern,Values=$SERVICE_B_PATH \
-    --actions Type=forward,TargetGroupArn=$TARGET_GROUP_B_ARN
-    
-export RULE_B_ARN=arn:aws:elasticloadbalancing:us-east-1:205375198116:listener-rule/app/services-lb/f26a2c472260edab/680bdaad01f01b00/25c686182e37eb6b
-```
+    --actions Type=forward,TargetGroupArn=$TARGET_GROUP_B_ARN \
+    --output text \
+    --query 'Rules[0].RuleArn')
+    ```
 
 ## 6. Set Up Services
 

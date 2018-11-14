@@ -1,7 +1,7 @@
 version: '3'
 services:
   servicea:
-    image: 205375198116.dkr.ecr.us-east-1.amazonaws.com/servicea:latest
+    image: 205375198116.dkr.ecr.us-east-1.amazonaws.com/servicea:v1
     ports:
       - "80:80"
     logging:

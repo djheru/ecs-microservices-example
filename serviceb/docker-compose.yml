@@ -1,7 +1,7 @@
 version: '3'
 services:
   serviceb:
-    image: 205375198116.dkr.ecr.us-east-1.amazonaws.com/serviceb:latest
+    image: 205375198116.dkr.ecr.us-east-1.amazonaws.com/serviceb:v1
     ports:
       - "80:80"
     logging:

@@ -1,0 +1,87 @@
+{
+    "taskDefinition": {
+        "revision": 8,
+        "networkMode": "awsvpc",
+        "compatibilities": [
+            "EC2",
+            "FARGATE"
+        ],
+        "requiresCompatibilities": [
+            "FARGATE"
+        ],
+        "containerDefinitions": [
+            {
+                "entryPoint": [],
+                "command": [],
+                "name": "servicea",
+                "dnsSearchDomains": [],
+                "volumesFrom": [],
+                "mountPoints": [],
+                "environment": [],
+                "dockerSecurityOptions": [],
+                "image": "205375198116.dkr.ecr.us-east-1.amazonaws.com/servicea:v1",
+                "dnsServers": [],
+                "memory": 512,
+                "links": [],
+                "readonlyRootFilesystem": false,
+                "privileged": false,
+                "extraHosts": [],
+                "essential": true,
+                "logConfiguration": {
+                    "options": {
+                        "awslogs-region": "us-east-1",
+                        "awslogs-stream-prefix": "servicea",
+                        "awslogs-group": "tutorial"
+                    },
+                    "logDriver": "awslogs"
+                },
+                "cpu": 0,
+                "portMappings": [
+                    {
+                        "hostPort": 80,
+                        "protocol": "tcp",
+                        "containerPort": 80
+                    }
+                ],
+                "linuxParameters": {
+                    "devices": [],
+                    "capabilities": {}
+                }
+            }
+        ],
+        "volumes": [],
+        "taskDefinitionArn": "arn:aws:ecs:us-east-1:205375198116:task-definition/servicea:8",
+        "memory": "512",
+        "family": "servicea",
+        "placementConstraints": [],
+        "status": "ACTIVE",
+        "executionRoleArn": "arn:aws:iam::205375198116:role/ecsTaskExecutionRole",
+        "cpu": "256",
+        "requiresAttributes": [
+            {
+                "name": "com.amazonaws.ecs.capability.docker-remote-api.1.17"
+            },
+            {
+                "name": "ecs.capability.execution-role-ecr-pull"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.docker-remote-api.1.18"
+            },
+            {
+                "name": "ecs.capability.task-eni"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.ecr-auth"
+            },
+            {
+                "name": "ecs.capability.execution-role-awslogs"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.logging-driver.awslogs"
+            },
+            {
+                "name": "com.amazonaws.ecs.capability.docker-remote-api.1.19"
+            }
+        ]
+    }
+}
